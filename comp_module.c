@@ -7,11 +7,13 @@
 #include "prg_io_nonblock.h"
 #include "messages.h"
 #include "event_queue.h"
+#include "main.h"
+#include "computation.h"
 
 void* read_pipe_thread(void*); 
 
 #ifndef IO_READ_TIMEOUT_MS
-#define IO_READ_TIMEOUT_MS 100
+#define IO_READ_TIMEOUT_MS 10
 #endif
 
 int main(int argc, char* argv[]) 
@@ -99,7 +101,7 @@ void* read_pipe_thread(void* data)
 		} else { // error occurred
 			fprintf(stderr, "Error: problem reading from a file\n");
 			set_quit();
-			event ev = { .type = EV_QUIT }; // deactivated for now
+			event ev = { .type = EV_ABORT }; // deactivated for now
 			/*
 			 * added queue_push to push the quit into the queue 
 			 */
