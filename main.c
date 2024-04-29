@@ -34,7 +34,7 @@ void* main_thread(void* data)
 void react_to_message(event* const current_event) {
     my_assert(current_event != NULL && current_event->type == EV_PIPE_IN_MESSAGE && current_event->data.msg, __func__, __LINE__, __FILE__);
     current_event->type = EV_TYPE_NUM;
-    const message* msg = current_event->data.msg;
+    message* msg = current_event->data.msg;
     switch (msg->type) {
         case MSG_SET_COMPUTE:
             if (!currently_computing()) {
@@ -49,12 +49,23 @@ void react_to_message(event* const current_event) {
                 event ev = { .type = EV_ABORT };
                 queue_push(ev);
             } else {
-                info("Current computation already aborted");
+                error("Current computation already aborted");
             }
         case MSG_COMPUTE:
             if (!currently_computing()) {
-                event ev = { .type = EV_COMPUTE };
-                
+                event ev = { .type = EV_START_COMPUTING, };
+                ev.data.msg = msg;
+                queue_push(ev);
+            } else {
+                error("Computation is already initialized");
             }
+        case MSG_GET_VERSION:
+            event ev = { .type = EV_SEND_MESSAGE };
+            msg->type = MSG_VERSION;
+            msg->data.version.major = MAJOR;
+            msg->data.version.minor = MINOR;
+            msg->data.version.patch = PATCH;
+            ev.data.msg = msg;
+            queue_push(ev);
     }
 }
