@@ -29,9 +29,11 @@ typedef enum {
    EV_REFRESH,
    EV_PIPE_IN_MESSAGE,
    EV_TYPE_NUM,
-   EV_START_COMPUTING,
    EV_CALCULATE_NEXT_PIXEL,
-   EV_SEND_MESSAGE
+   EV_SEND_VERSION,
+   EV_STARTUP,
+   EV_OK,
+   EV_ERROR
 } event_type;
 
 typedef struct {

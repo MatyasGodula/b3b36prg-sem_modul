@@ -33,13 +33,21 @@ int main(int argc, char* argv[])
     printf("finished opening pipes\n");
     my_assert(pipe_in != -1 && pipe_out != -1, __func__, __LINE__, __FILE__);
 
-    enum {READ_PIPE_THREAD, MAIN_THREAD, COMPUTATION_THREAD, NUM_THREADS};
+    enum {READ_PIPE_THREAD, MAIN_THREAD, NUM_THREADS, COMPUTATION_THREAD};
     const char* thread_names[] = {"ReadPipe", "MainThread", "ComputationThread"};
     pthread_t threads[NUM_THREADS];
     void* (*thread_functions[])(void*) = {read_pipe_thread, main_thread, computation_thread};
     void* thread_data[NUM_THREADS] = {};
     thread_data[READ_PIPE_THREAD] = &pipe_in;
     thread_data[MAIN_THREAD] = &pipe_out;
+
+	/*
+	 *
+	 * plan: make the calculation function so i can start debugging, the main.c program is 
+	 * pretty well constructed but i had to change the handling of the messages
+	 * 
+	 */
+
 
     for (int i = 0; i < NUM_THREADS; ++i) {
 		int r = pthread_create(&threads[i], NULL, thread_functions[i], thread_data[i]);
