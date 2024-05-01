@@ -33,10 +33,12 @@ int main(int argc, char* argv[])
     printf("finished opening pipes\n");
     my_assert(pipe_in != -1 && pipe_out != -1, __func__, __LINE__, __FILE__);
 
-    enum {READ_PIPE_THREAD, MAIN_THREAD, NUM_THREADS, COMPUTATION_THREAD};
-    const char* thread_names[] = {"ReadPipe", "MainThread", "ComputationThread"};
+    enum {READ_PIPE_THREAD, MAIN_THREAD, NUM_THREADS};
+	// there will be no computation thread, computation will be just a library 
+	// TODO: add a keyboard thread for quitting the comp module
+    const char* thread_names[] = {"ReadPipe", "MainThread"};
     pthread_t threads[NUM_THREADS];
-    void* (*thread_functions[])(void*) = {read_pipe_thread, main_thread, computation_thread};
+    void* (*thread_functions[])(void*) = {read_pipe_thread, main_thread};
     void* thread_data[NUM_THREADS] = {};
     thread_data[READ_PIPE_THREAD] = &pipe_in;
     thread_data[MAIN_THREAD] = &pipe_out;

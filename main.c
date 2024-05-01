@@ -27,7 +27,7 @@ void* main_thread(void* data)
     uint8_t msg_buffer[sizeof(message)];
     int msg_len;
     bool quit = false;
-    event ev = { .type = EV_STARTUP};
+    event ev = { .type = EV_STARTUP };
     queue_push(ev);
     // inspired by prgsem, but will probably delete a lot of it since there are not 
     // many events happening in this module
@@ -39,24 +39,12 @@ void* main_thread(void* data)
                 debug("startup message set");
                 msg.type = MSG_STARTUP;
                 break;
-            case EV_OK:
-                msg.type = MSG_OK;
-                break;
-            case EV_ERROR:
-                msg.type = MSG_ERROR;
-                break;
             case EV_PIPE_IN_MESSAGE:
-                react_to_message(&current_event);
-                break;
-            case EV_SEND_VERSION:
-                msg.type = MSG_VERSION;
-                msg.data.version.major = MAJOR;
-                msg.data.version.minor = MINOR;
-                msg.data.version.patch = PATCH;
-                info("get version message set");
+                // added &msg for reactions
+                react_to_message(&current_event, &msg);
                 break;
             case EV_CALCULATE_NEXT_PIXEL:
-                compute_next_pixel();
+                calculate_pixel(&msg);
                 break;
             default:
                 break;
@@ -73,45 +61,46 @@ void* main_thread(void* data)
     return NULL;
 }
 
-void react_to_message(event* const current_event) {
+void react_to_message(event* const current_event, message* const msg_pipe_out) {
     my_assert(current_event != NULL && current_event->type == EV_PIPE_IN_MESSAGE && current_event->data.msg, __func__, __LINE__, __FILE__);
     current_event->type = EV_TYPE_NUM;
-    message* msg = current_event->data.msg;
-    switch (msg->type) {
+    message* msg_pipe_in = current_event->data.msg;
+    switch (msg_pipe_in->type) {
         case MSG_SET_COMPUTE:
             if (!currently_computing()) {
                 // sets up the initial computation for the pixels
-                set_up_computation(msg);
+                set_up_computation(msg_pipe_in, msg_pipe_out);
             } else {
                 error("Computation set up failed: already computing");
-                event ev = { .type = EV_ERROR };
-                queue_push(ev);
+                msg_pipe_out->type = MSG_ERROR;
             }
             break;
         case MSG_ABORT:
             if (!aborted_computation()) {
                 // causes the next pixel computation to not push "compute_next_pixel"
-                abort_computation();
+                // also abort_computation should react with msg_ok
+                abort_computation(msg_pipe_out);
             } else {
                 error("Current computation already aborted");
             }
             break;
         case MSG_COMPUTE:
             if (!currently_computing()) {
-                event ev = { .type = EV_OK };
-                queue_push(ev);
                 // sets up computation for the current chunk 
-                set_up_chunk_computation(msg);
+                set_up_chunk_computation(msg_pipe_in, msg_pipe_out);
                 // starts the "recursive" pixel computation
-                compute_next_pixel();
+                event ev = { .type = EV_CALCULATE_NEXT_PIXEL };
+                queue_push(ev);
             } else {
                 error("Computation is already ongoing");
+                msg_pipe_out->type = MSG_ERROR;
             }
             break;
         case MSG_GET_VERSION:
-            info("Get version command received");
-            event ev = { .type = EV_SEND_VERSION };
-            queue_push(ev);
+            msg_pipe_out->type = MSG_VERSION;
+            msg_pipe_out->data.version.major = MAJOR;
+            msg_pipe_out->data.version.minor = MINOR;
+            msg_pipe_out->data.version.patch = PATCH;
             break;
     }
     free(current_event->data.msg);
