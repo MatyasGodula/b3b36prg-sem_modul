@@ -3,8 +3,8 @@
 #include <stdio.h>
 
 #define MAJOR 1
-#define MINOR 1
-#define PATCH 1
+#define MINOR 2
+#define PATCH 12
 
 
 #include "main.h"
@@ -44,7 +44,19 @@ void* main_thread(void* data)
                 react_to_message(&current_event, &msg);
                 break;
             case EV_CALCULATE_NEXT_PIXEL:
-                calculate_pixel(&msg);
+                if (!aborted_computation() && !done_computing()) {
+                    compute_pixel(&msg);
+                    event ev = { .type = EV_CALCULATE_NEXT_PIXEL };
+                    queue_push(ev);
+                    if (!done_computing()) {
+                        info("pushing_new_pixel");
+                    } else {
+                        info("computation finished pushing to send done");
+                    }
+                } else if (done_computing()) {
+                    info("sending msg_done");
+                    msg.type = MSG_DONE;
+                }
                 break;
             default:
                 break;
@@ -70,6 +82,7 @@ void react_to_message(event* const current_event, message* const msg_pipe_out) {
             if (!currently_computing()) {
                 // sets up the initial computation for the pixels
                 set_up_computation(msg_pipe_in, msg_pipe_out);
+                debug("computation set up correctly");
             } else {
                 error("Computation set up failed: already computing");
                 msg_pipe_out->type = MSG_ERROR;
@@ -80,6 +93,7 @@ void react_to_message(event* const current_event, message* const msg_pipe_out) {
                 // causes the next pixel computation to not push "compute_next_pixel"
                 // also abort_computation should react with msg_ok
                 abort_computation(msg_pipe_out);
+                debug("abortion set up");
             } else {
                 error("Current computation already aborted");
             }

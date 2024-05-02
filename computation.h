@@ -13,6 +13,7 @@ bool aborted_computation();
 // sets up important info for computing a chunk
 void set_up_chunk_computation(message* msg_pipe_in, message* msg_pipe_out);
 void compute_pixel(message* msg_pipe_out);
+bool done_computing();
 
 
 #endif

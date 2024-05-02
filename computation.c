@@ -4,6 +4,7 @@
 #include "messages.h"
 #include "event_queue.h"
 #include "computation.h"
+#include "utils.h"
 
 
 static struct {
@@ -29,7 +30,9 @@ static struct {
 
     // current pixel to be computed, it is changed at the end of computation
     double real_coords;
+    uint8_t x_calculated;
     double imag_coords;
+    uint8_t y_calculated;
 
     bool computing;
     bool done;
@@ -75,15 +78,19 @@ void set_up_chunk_computation(message* msg_pipe_in, message* msg_pipe_out)
         data.n_imag = msg_pipe_in->data.compute.n_im;
         data.end_real_chunk = data.start_real_chunk + (data.n_real * data.real_increment);
         data.end_imag_chunk = data.start_imag_chunk + (data.n_imag * data.imag_increment);
+        // sets upp the coord numbers for sending in compute_data
+        data.x_calculated = 0;
+        data.y_calculated = 0;
         data.computing = true;
         data.aborted = false;
+        data.done = false;
         data.real_coords = data.start_real_chunk;
         data.imag_coords = data.start_imag_chunk;
         data.pixels_calculated = 0;
         data.pixels_to_calculate = data.n_real * data.n_imag;
         msg_pipe_out->type = MSG_OK;
     } else {
-        msg_pipe_out = MSG_ERROR;
+        msg_pipe_out->type = MSG_ERROR;
     }
     
 }
@@ -112,12 +119,33 @@ uint8_t iteration_calculation()
 
         iters++;
     }
-
     return iters;
 }
 
-/*
- * 
- * write a function to calculate each pixel and then increment current pixel
- * 
- */
+void compute_pixel(message* msg_pipe_out) 
+{
+    if (data.set_up && !data.aborted && data.computing && !data.done) {
+        uint8_t iters = iteration_calculation();
+        msg_pipe_out->type = MSG_COMPUTE_DATA;
+        msg_pipe_out->data.compute_data.cid = data.cid;
+        msg_pipe_out->data.compute_data.iter = iters;
+        msg_pipe_out->data.compute_data.i_re = data.x_calculated;
+        msg_pipe_out->data.compute_data.i_im = data.y_calculated;
+        data.pixels_calculated += 1;
+        data.real_coords += data.real_increment;
+        data.x_calculated += 1;
+        if (data.x_calculated >= data.n_real) {
+            data.real_coords = data.start_real_chunk;
+            data.x_calculated = 0;
+            data.imag_coords += data.imag_increment;
+            data.y_calculated += 1;
+            if (data.y_calculated >= data.n_imag) {
+                data.computing = false;
+                data.done = true;
+            }
+        }
+    }
+}
+
+bool done_computing() { return data.done; }
+
