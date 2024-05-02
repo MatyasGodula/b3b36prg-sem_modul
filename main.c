@@ -40,7 +40,6 @@ void* main_thread(void* data)
                 msg.type = MSG_STARTUP;
                 break;
             case EV_PIPE_IN_MESSAGE:
-                // added &msg for reactions
                 react_to_message(&current_event, &msg);
                 break;
             case EV_CALCULATE_NEXT_PIXEL:
@@ -48,11 +47,6 @@ void* main_thread(void* data)
                     compute_pixel(&msg);
                     event ev = { .type = EV_CALCULATE_NEXT_PIXEL };
                     queue_push(ev);
-                    if (!done_computing()) {
-                        info("pushing_new_pixel");
-                    } else {
-                        info("computation finished pushing to send done");
-                    }
                 } else if (done_computing()) {
                     info("sending msg_done");
                     msg.type = MSG_DONE;
@@ -91,7 +85,6 @@ void react_to_message(event* const current_event, message* const msg_pipe_out) {
         case MSG_ABORT:
             if (!aborted_computation()) {
                 // causes the next pixel computation to not push "compute_next_pixel"
-                // also abort_computation should react with msg_ok
                 abort_computation(msg_pipe_out);
                 debug("abortion set up");
             } else {

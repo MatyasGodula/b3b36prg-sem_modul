@@ -23,10 +23,6 @@ static struct {
     double start_imag_chunk; // start of the imaginary coordinates for this chunk
     uint8_t n_real; // number of real cells
     uint8_t n_imag; // number of imaginary cells
-    double end_real_chunk;
-    double end_imag_chunk;
-    int pixels_to_calculate;
-    int pixels_calculated;
 
     // current pixel to be computed, it is changed at the end of computation
     double real_coords;
@@ -71,23 +67,21 @@ bool aborted_computation() { return data.aborted; }
 void set_up_chunk_computation(message* msg_pipe_in, message* msg_pipe_out)
 {
     if (data.set_up && !data.computing) {
+        // translates the message to the program's static struct
         data.cid = msg_pipe_in->data.compute.cid;
         data.start_real_chunk = msg_pipe_in->data.compute.re;
         data.start_imag_chunk = msg_pipe_in->data.compute.im;
         data.n_real = msg_pipe_in->data.compute.n_re;
         data.n_imag = msg_pipe_in->data.compute.n_im;
-        data.end_real_chunk = data.start_real_chunk + (data.n_real * data.real_increment);
-        data.end_imag_chunk = data.start_imag_chunk + (data.n_imag * data.imag_increment);
-        // sets upp the coord numbers for sending in compute_data
+        // sets up the coord numbers for sending in compute_data
         data.x_calculated = 0;
         data.y_calculated = 0;
         data.computing = true;
         data.aborted = false;
         data.done = false;
+        // real coords in bool to keep track of which pixel is being computed
         data.real_coords = data.start_real_chunk;
         data.imag_coords = data.start_imag_chunk;
-        data.pixels_calculated = 0;
-        data.pixels_to_calculate = data.n_real * data.n_imag;
         msg_pipe_out->type = MSG_OK;
     } else {
         msg_pipe_out->type = MSG_ERROR;
@@ -131,7 +125,6 @@ void compute_pixel(message* msg_pipe_out)
         msg_pipe_out->data.compute_data.iter = iters;
         msg_pipe_out->data.compute_data.i_re = data.x_calculated;
         msg_pipe_out->data.compute_data.i_im = data.y_calculated;
-        data.pixels_calculated += 1;
         data.real_coords += data.real_increment;
         data.x_calculated += 1;
         if (data.x_calculated >= data.n_real) {
