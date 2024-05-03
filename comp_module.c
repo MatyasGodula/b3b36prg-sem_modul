@@ -9,6 +9,7 @@
 #include "event_queue.h"
 #include "main.h"
 #include "computation.h"
+#include "keyboard.h"
 
 void* read_pipe_thread(void*); 
 
@@ -33,20 +34,19 @@ int main(int argc, char* argv[])
     printf("finished opening pipes\n");
     my_assert(pipe_in != -1 && pipe_out != -1, __func__, __LINE__, __FILE__);
 
-    enum {READ_PIPE_THREAD, MAIN_THREAD, NUM_THREADS};
+    enum {READ_PIPE_THREAD, MAIN_THREAD, KEYBOARD_THREAD, NUM_THREADS};
 	// there will be no computation thread, computation will be just a library 
 	// TODO: add a keyboard thread for quitting the comp module
-    const char* thread_names[] = {"ReadPipe", "MainThread"};
+    const char* thread_names[] = {"ReadPipe", "MainThread", "KeyboardThread"};
     pthread_t threads[NUM_THREADS];
-    void* (*thread_functions[])(void*) = {read_pipe_thread, main_thread};
+    void* (*thread_functions[])(void*) = {read_pipe_thread, main_thread, keyboard_thread};
     void* thread_data[NUM_THREADS] = {};
     thread_data[READ_PIPE_THREAD] = &pipe_in;
     thread_data[MAIN_THREAD] = &pipe_out;
 
 	/*
 	 *
-	 * plan: make the calculation function so i can start debugging, the main.c program is 
-	 * pretty well constructed but i had to change the handling of the messages
+	 * need to make a function that clears the queue of all memory alloced messages
 	 * 
 	 */
 
@@ -68,6 +68,8 @@ int main(int argc, char* argv[])
 
     return ret;
 }
+
+
 
 void* read_pipe_thread(void* data)
 {

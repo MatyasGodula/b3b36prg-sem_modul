@@ -48,7 +48,6 @@ void* main_thread(void* data)
                     event ev = { .type = EV_CALCULATE_NEXT_PIXEL };
                     queue_push(ev);
                 } else if (done_computing()) {
-                    info("sending msg_done");
                     msg.type = MSG_DONE;
                 }
                 break;
@@ -58,11 +57,11 @@ void* main_thread(void* data)
         if (msg.type != MSG_NBR) {
             my_assert(fill_message_buf(&msg, msg_buffer, sizeof(message), &msg_len), __func__, __LINE__, __FILE__);
             if (write(pipe_out, msg_buffer, msg_len) == msg_len) {
-                debug("message successfully sent");
             } else {
                 error("send message failed");
             }
         }
+        quit = is_quit();
     } while (!quit);
     return NULL;
 }
