@@ -63,6 +63,7 @@ void* main_thread(void* data)
         }
         quit = is_quit();
     } while (!quit);
+    queue_cleanup();
     return NULL;
 }
 
