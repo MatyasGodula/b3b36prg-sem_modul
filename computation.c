@@ -82,7 +82,7 @@ void set_up_chunk_computation(message* msg_pipe_in, message* msg_pipe_out)
         // real coords in bool to keep track of which pixel is being computed
         data.real_coords = data.start_real_chunk;
         data.imag_coords = data.start_imag_chunk;
-        msg_pipe_out->type = MSG_OK;
+        //msg_pipe_out->type = MSG_OK;
     } else {
         msg_pipe_out->type = MSG_ERROR;
     }

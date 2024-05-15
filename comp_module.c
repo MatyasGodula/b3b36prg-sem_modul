@@ -14,7 +14,7 @@
 void* read_pipe_thread(void*); 
 
 #ifndef IO_READ_TIMEOUT_MS
-#define IO_READ_TIMEOUT_MS 10
+#define IO_READ_TIMEOUT_MS 1
 #endif
 
 int main(int argc, char* argv[]) 
@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
     const char* thread_names[] = {"ReadPipe", "MainThread", "KeyboardThread"};
     pthread_t threads[NUM_THREADS];
     void* (*thread_functions[])(void*) = {read_pipe_thread, main_thread, keyboard_thread};
-    void* thread_data[NUM_THREADS] = {};
+    void* thread_data[NUM_THREADS];
     thread_data[READ_PIPE_THREAD] = &pipe_in;
     thread_data[MAIN_THREAD] = &pipe_out;
 

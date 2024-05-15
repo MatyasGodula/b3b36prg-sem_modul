@@ -37,7 +37,7 @@ void* main_thread(void* data)
         switch (current_event.type) {
             case EV_STARTUP:
                 debug("startup message set");
-                msg.type = MSG_STARTUP;
+                //msg.type = MSG_STARTUP;
                 break;
             case EV_PIPE_IN_MESSAGE:
                 react_to_message(&current_event, &msg);
@@ -47,8 +47,11 @@ void* main_thread(void* data)
                     compute_pixel(&msg);
                     event ev = { .type = EV_CALCULATE_NEXT_PIXEL };
                     queue_push(ev);
-                } else if (done_computing()) {
+                } else if (done_computing() && !aborted_computation()) {
                     msg.type = MSG_DONE;
+                    debug("sent msg_done");
+                } else if (aborted_computation()) {
+                    printf("computation aborted not calculating new pixel\n");
                 }
                 break;
             default:
@@ -76,30 +79,29 @@ void react_to_message(event* const current_event, message* const msg_pipe_out) {
             if (!currently_computing()) {
                 // sets up the initial computation for the pixels
                 set_up_computation(msg_pipe_in, msg_pipe_out);
-                debug("computation set up correctly");
             } else {
                 error("Computation set up failed: already computing");
                 msg_pipe_out->type = MSG_ERROR;
             }
             break;
         case MSG_ABORT:
-            if (!aborted_computation()) {
+            if (!currently_computing()) {
+                info("abort message received but not currently computing");
+            } 
                 // causes the next pixel computation to not push "compute_next_pixel"
-                abort_computation(msg_pipe_out);
-                debug("abortion set up");
-            } else {
-                error("Current computation already aborted");
-            }
+            abort_computation(msg_pipe_out);
+            debug("accepted abort");
             break;
         case MSG_COMPUTE:
             if (!currently_computing()) {
                 // sets up computation for the current chunk 
+                printf("accepted message compute for chunk id: %d\n", msg_pipe_in->data.compute.cid);
                 set_up_chunk_computation(msg_pipe_in, msg_pipe_out);
                 // starts the "recursive" pixel computation
                 event ev = { .type = EV_CALCULATE_NEXT_PIXEL };
                 queue_push(ev);
             } else {
-                error("Computation is already ongoing");
+                error("Computation not yet finished");
                 msg_pipe_out->type = MSG_ERROR;
             }
             break;
