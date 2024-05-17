@@ -44,12 +44,6 @@ int main(int argc, char* argv[])
     thread_data[READ_PIPE_THREAD] = &pipe_in;
     thread_data[MAIN_THREAD] = &pipe_out;
 
-	/*
-	 *
-	 * need to make a function that clears the queue of all memory alloced messages
-	 * 
-	 */
-
 
     for (int i = 0; i < NUM_THREADS; ++i) {
 		int r = pthread_create(&threads[i], NULL, thread_functions[i], thread_data[i]);
